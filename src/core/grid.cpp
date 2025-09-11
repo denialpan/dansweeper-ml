@@ -8,9 +8,7 @@
 namespace Grid {
 
     Grid::Grid(int height, int width, int mineNum) {
-
         generateBoard(height, width, mineNum);
-
     }
 
     void Grid::generateBoard(int height, int width, int mineNum) {

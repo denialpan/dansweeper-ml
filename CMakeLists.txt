@@ -9,8 +9,10 @@ add_executable(dansweeper_ml
         src/main.cpp
         src/core/grid.cpp
         src/core/render.cpp
+        src/core/controller.cpp
         include/dansweeperml/grid.h
         include/dansweeperml/render.h
+        include/dansweeperml/controller.h
         include/dansweeperml/tile.h
 )
 

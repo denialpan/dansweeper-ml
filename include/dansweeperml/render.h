@@ -5,14 +5,16 @@
 #ifndef DANSWEEPER_ML_RENDER_H
 #define DANSWEEPER_ML_RENDER_H
 
+#include <raylib.h>
+
 #include "grid.h"
 
 namespace Render {
 
     void loadTexture();
     void unloadTexture();
-    void initializeCamera(Grid::Grid* grid);
-    void renderThread(Grid::Grid* grid);
+    void initializeRender(Camera2D& cam, Grid::Grid* grid);
+    void renderThread();
 
 } // Render
 
