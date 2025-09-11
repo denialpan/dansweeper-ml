@@ -5,6 +5,20 @@
 
 #include <dansweeperml/controller.h>
 
+void debug(Font font) {
+
+    std::vector<std::string> listOfText;
+
+    listOfText.push_back(std::format("created by daniel pan"));
+    listOfText.push_back(std::format("fps: {}", GetFPS()));
+    listOfText.push_back(std::format("coords: {}, {}", Controller::getCoordinates().first, Controller::getCoordinates().second));
+
+    for (int i = 0; i < listOfText.size(); i++) {
+        DrawTextEx(font, listOfText[i].c_str(), {10, 15.0f * i + 10}, 13, 1, WHITE);
+    }
+
+}
+
 int main() {
 
     const int screenWidth = 800;
@@ -24,6 +38,8 @@ int main() {
     Font customFont = LoadFontEx("../resources/ProggyClean.ttf", 13, 0, 250);
     SetTextureFilter(customFont.texture, TEXTURE_FILTER_POINT);
 
+    int debugRow = 10;
+
     // Main loop
     while (!WindowShouldClose()) {
 
@@ -35,9 +51,8 @@ int main() {
 
         ClearBackground(BLACK);
         Render::renderThread();
-        DrawTextEx(customFont, std::to_string(GetFPS()).c_str(), {10, 10}, 13, 1, WHITE);
-        DrawTextEx(customFont, std::format("coords: {} {}", Controller::getCoordinates().first, Controller::getCoordinates().second).c_str(), {10, 25}, 13, 1, WHITE);
 
+        debug(customFont);
         EndDrawing();
 
     }
