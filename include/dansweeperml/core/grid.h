@@ -28,6 +28,11 @@ namespace Grid {
         std::string seed64;
     };
 
+    enum GridState {
+        SOLVED,
+        UNSOLVED,
+    };
+
     // cell interactable content
     // a way to link between renderable and literal grid content
     struct Cell {
@@ -46,13 +51,16 @@ namespace Grid {
         Grid(int height, int width, float mineDensity);
 
         GridMetadata getMetadata();
-        const std::vector<std::vector<Cell>>& getCells() const;
+        std::vector<std::vector<Cell>>& getCells();
+        void generateGrid(int safeX, int safeY);
+
 
     private:
 
         GridMetadata metadata;
         std::vector<std::vector<Cell>> cells;
-        void generateBoard(int height, int width, int mineNum);
+        void initializeEmptyGrid(int height, int width, int mineNum);
+        void generatePrng();
 
     };
 

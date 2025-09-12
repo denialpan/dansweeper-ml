@@ -38,7 +38,7 @@ namespace Controller {
 
             // clamp zoom
             targetZoom *= (1.0f + zoomIncrement * wheel);
-            targetZoom = std::clamp(targetZoom, 0.5f, 10.0f);
+            targetZoom = std::clamp(targetZoom, 1.0f, 10.0f);
 
             Vector2 worldAfter = GetWorldToScreen2D(mousePos, *camera);
             Vector2 diff = {

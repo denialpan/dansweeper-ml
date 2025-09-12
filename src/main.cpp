@@ -5,13 +5,26 @@
 
 #include <../include/dansweeperml/core/controller.h>
 
-void debug(Font font) {
+void debug(Font font, Grid::Grid* grid) {
 
     std::vector<std::string> listOfText;
+    Grid::GridMetadata metadata = grid->getMetadata();
+    std::vector<std::vector<Grid::Cell>> cells = grid->getCells();
+    auto [cx, cy] = Controller::getCoordinates();
 
     listOfText.push_back(std::format("created by daniel pan"));
     listOfText.push_back(std::format("fps: {}", GetFPS()));
-    listOfText.push_back(std::format("coords: {}, {}", Controller::getCoordinates().first, Controller::getCoordinates().second));
+    listOfText.push_back(std::format("dims: {}x{}", metadata.width, metadata.height));
+    listOfText.push_back(std::format("mines: {}", metadata.mineNum));
+    listOfText.push_back(std::format("prng: {}", metadata.prng));
+    listOfText.push_back(std::format("safe: {}, {}", metadata.safeX, metadata.safeY));
+
+    if (cx >= 0 && cy >= 0 && cx < metadata.width && cy < metadata.height) {
+        listOfText.push_back(std::format("coords: {}, {}", cx, cy));
+        listOfText.push_back(std::format("mine: {}", cells[cy][cx].content == Grid::CELL_MINE));
+        listOfText.push_back(std::format("adjc: {}", cells[cy][cx].adjacentMines));
+    }
+
 
     for (int i = 0; i < listOfText.size(); i++) {
         DrawTextEx(font, listOfText[i].c_str(), {10, 15.0f * i + 10}, 13, 1, WHITE);
@@ -26,7 +39,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(17, 17, 0);
+    Grid::Grid* currentGrid = new Grid::Grid(256, 256, 64);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
@@ -38,6 +51,7 @@ int main() {
     Font customFont = LoadFontEx("../resources/ProggyClean.ttf", 13, 0, 250);
     SetTextureFilter(customFont.texture, TEXTURE_FILTER_POINT);
 
+    currentGrid->generateGrid(10, 100);
 
     while (!WindowShouldClose()) {
 
@@ -50,7 +64,7 @@ int main() {
         ClearBackground(BLACK);
         Render::renderThread();
 
-        debug(customFont);
+        debug(customFont, currentGrid);
         EndDrawing();
 
     }

@@ -9,11 +9,6 @@
 #include "dansweeperml/core/grid.h"
 #include "dansweeperml/core/tile.h"
 #include <algorithm>
-#include <cmath>
-#include <iostream>
-
-#include "../../include/dansweeperml/core/controller.h"
-
 
 namespace Render {
 
@@ -21,7 +16,7 @@ namespace Render {
     static Camera2D* camera = nullptr;
     static Grid::Grid* grid = nullptr;
     static Grid::GridMetadata gridMetadata;
-    static std::vector<std::vector<Grid::Cell>> cells;
+    static std::vector<std::vector<Grid::Cell>>* cells;
 
     void Render::loadTexture() {
         Image texture = LoadImage("../resources/texture.png");
@@ -37,7 +32,7 @@ namespace Render {
 
         camera = &c;
         grid = g;
-        cells = grid->getCells();
+        cells = &grid->getCells();
         gridMetadata = grid->getMetadata();
 
         int mapWidthPixels = grid->getMetadata().width * Tile::TILE_SIZE;
@@ -56,7 +51,6 @@ namespace Render {
 
         camera->offset = {GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f};
 
-
         BeginMode2D(*camera);
 
         // CULLING: compute visible tile bounds
@@ -71,7 +65,7 @@ namespace Render {
 
         for (int y = startY; y < endY; y++) {
             for (int x = startX; x < endX; x++) {
-                int tileID = cells[y][x].renderTile;
+                int tileID = (*cells)[y][x].renderTile;
                 int srcX = (tileID % Tile::TILE_ROW_COL) * Tile::TILE_SIZE;
                 int srcY = (tileID / Tile::TILE_ROW_COL) * Tile::TILE_SIZE;
 
