@@ -44,6 +44,9 @@ namespace Grid {
     // fill grid with mines from safexy and prng
     void Grid::generateGrid(int safeX, int safeY) {
 
+        // reset grid on multiboard runs
+        initializeEmptyGrid(this->metadata.height, this->metadata.width, this->metadata.mineNum);
+
         this->metadata.safeX = safeX;
         this->metadata.safeY = safeY;
         generatePrng();
@@ -96,18 +99,14 @@ namespace Grid {
     void Grid::generatePrng() {
 
         auto now = std::chrono::system_clock::now();
-        auto timeNs = now.time_since_epoch().count();
+        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+    std::chrono::system_clock::now().time_since_epoch()).count();
         std::ostringstream saltStream;
-        saltStream << std::hex << timeNs;
+        saltStream << std::hex << ns;
 
         std::string salt = saltStream.str();
 
-        std::string fullKey =   std::to_string(this->metadata.width) +
-                                std::to_string(this->metadata.height) +
-                                std::to_string(this->metadata.mineNum) +
-                                std::to_string(this->metadata.safeX) +
-                                std::to_string(this->metadata.safeY);
-
+        std::string fullKey = std::format("{}", salt);
         std::hash<std::string> hasher;
         this->metadata.prng = hasher(fullKey);
     }

@@ -39,7 +39,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(8, 8, 0.25f);
+    Grid::Grid* currentGrid = new Grid::Grid(9, 9, 0.25f);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
