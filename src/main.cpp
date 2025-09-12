@@ -39,7 +39,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(256, 256, 64);
+    Grid::Grid* currentGrid = new Grid::Grid(8, 8, 0.25f);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
@@ -51,7 +51,7 @@ int main() {
     Font customFont = LoadFontEx("../resources/ProggyClean.ttf", 13, 0, 250);
     SetTextureFilter(customFont.texture, TEXTURE_FILTER_POINT);
 
-    currentGrid->generateGrid(10, 100);
+    currentGrid->generateGrid(4, 4);
 
     while (!WindowShouldClose()) {
 

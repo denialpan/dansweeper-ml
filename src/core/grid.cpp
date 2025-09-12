@@ -14,6 +14,11 @@ namespace Grid {
         initializeEmptyGrid(height, width, mineNum);
     }
 
+    Grid::Grid(int height, int width, float mineDensity) {
+        initializeEmptyGrid(height, width, height * width * mineDensity);
+    }
+
+
     // empty grid before safexy and bombs are placed
     void Grid::initializeEmptyGrid(int height, int width, int mineNum) {
 
