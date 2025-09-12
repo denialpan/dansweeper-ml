@@ -2,8 +2,8 @@
 // Created by dern on 9/7/2025.
 //
 
-#include "dansweeperml/grid.h"
-#include "dansweeperml/render.h"
+#include "../../include/dansweeperml/core/grid.h"
+#include "../../include/dansweeperml/core/render.h"
 
 namespace Grid {
 

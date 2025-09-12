@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <string>
-#include <dansweeperml/tile.h>
+#include <dansweeperml/core/tile.h>
 
 namespace Grid {
 

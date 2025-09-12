@@ -2,17 +2,17 @@
 // Created by dern on 9/7/2025.
 //
 
-#include "../../include/dansweeperml/render.h"
+#include "../../include/dansweeperml/core/render.h"
 
 #include <raylib.h>
 
-#include "dansweeperml/grid.h"
-#include "dansweeperml/tile.h"
+#include "dansweeperml/core/grid.h"
+#include "dansweeperml/core/tile.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 
-#include "dansweeperml/controller.h"
+#include "../../include/dansweeperml/core/controller.h"
 
 
 namespace Render {

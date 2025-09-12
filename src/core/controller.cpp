@@ -2,7 +2,7 @@
 // Created by dern on 9/10/2025.
 //
 
-#include "../../include/dansweeperml/controller.h"
+#include "../../include/dansweeperml/core/controller.h"
 
 #include <algorithm>
 #include <cmath>

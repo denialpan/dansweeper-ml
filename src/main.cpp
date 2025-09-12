@@ -1,9 +1,9 @@
 #include <raylib.h>
 #include <mlpack/core.hpp>
 #include <armadillo>
-#include <dansweeperml/render.h>
+#include <dansweeperml/core/render.h>
 
-#include <dansweeperml/controller.h>
+#include <../include/dansweeperml/core/controller.h>
 
 void debug(Font font) {
 
@@ -38,9 +38,7 @@ int main() {
     Font customFont = LoadFontEx("../resources/ProggyClean.ttf", 13, 0, 250);
     SetTextureFilter(customFont.texture, TEXTURE_FILTER_POINT);
 
-    int debugRow = 10;
 
-    // Main loop
     while (!WindowShouldClose()) {
 
         Controller::cameraZoom();
