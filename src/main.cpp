@@ -5,12 +5,23 @@
 
 #include <../include/dansweeperml/core/controller.h>
 
+enum RunType {
+    RUN_ALGORITHM,
+    RUN_AGENT,
+    LEARN_AGENT,
+};
+
+static RunType runtype = RUN_ALGORITHM;
+static int iterateRuntype;
+
 void debug(Font font, Grid::Grid* grid) {
 
     std::vector<std::string> listOfText;
     Grid::GridMetadata metadata = grid->getMetadata();
     std::vector<std::vector<Grid::Cell>> cells = grid->getCells();
     auto [cx, cy] = Controller::getCoordinates();
+
+    std::string runtypeString = "";
 
     listOfText.push_back(std::format("created by daniel pan"));
     listOfText.push_back(std::format("fps: {}", GetFPS()));
@@ -19,18 +30,35 @@ void debug(Font font, Grid::Grid* grid) {
     listOfText.push_back(std::format("prng: {}", metadata.prng));
     listOfText.push_back(std::format("safe: {}, {}", metadata.safeX, metadata.safeY));
 
+    switch (runtype) {
+        case RUN_ALGORITHM:
+            runtypeString = "algorithm";
+            break;
+        case RUN_AGENT:
+            runtypeString = "agent";
+            break;
+        case LEARN_AGENT:
+            runtypeString = "learn agent";
+            break;
+        default:
+            std::cout << "how you get here" << std::endl;
+            break;
+    }
+
+    listOfText.push_back(std::format("run type: {}", runtypeString));
+
     if (cx >= 0 && cy >= 0 && cx < metadata.width && cy < metadata.height) {
         listOfText.push_back(std::format("coords: {}, {}", cx, cy));
         listOfText.push_back(std::format("mine: {}", cells[cy][cx].content == Grid::CELL_MINE));
         listOfText.push_back(std::format("adjc: {}", cells[cy][cx].adjacentMines));
     }
 
-
     for (int i = 0; i < listOfText.size(); i++) {
         DrawTextEx(font, listOfText[i].c_str(), {10, 15.0f * i + 10}, 13, 1, WHITE);
     }
 
 }
+
 
 int main() {
 
@@ -58,6 +86,21 @@ int main() {
         Controller::cameraZoom();
         Controller::cameraPan();
         Controller::cameraHover();
+
+        // debug new board
+        if (IsKeyDown(KEY_SPACE)) {
+            currentGrid->generateGrid(4, 4);
+        }
+
+        if (IsKeyPressed(KEY_LEFT)) {
+            iterateRuntype--;
+            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype)) % 3);
+        }
+
+        if (IsKeyPressed(KEY_RIGHT)) {
+            iterateRuntype++;
+            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype)) % 3);
+        }
 
         BeginDrawing();
 

@@ -98,7 +98,6 @@ namespace Grid {
 
     void Grid::generatePrng() {
 
-        auto now = std::chrono::system_clock::now();
         auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::system_clock::now().time_since_epoch()).count();
         std::ostringstream saltStream;
