@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <string>
+#include <mutex>
 #include <dansweeperml/core/tile.h>
 
 namespace Grid {
@@ -26,6 +27,7 @@ namespace Grid {
         int safeX;
         int safeY;
         std::string seed64;
+        float time;
     };
 
     enum GridState {
@@ -54,11 +56,22 @@ namespace Grid {
         std::vector<std::vector<Cell>>& getCells();
         void generateGrid(int safeX, int safeY);
 
+        void reveal(int x, int y);
+        void flag(int x, int y);
+        void chord(int x, int y);
+        void updateTimer();
+
+
 
     private:
 
         GridMetadata metadata;
         std::vector<std::vector<Cell>> cells;
+
+        double startTime;
+        float timeElapsed;
+
+        bool validateCoordinates(int x, int y);
         void initializeEmptyGrid(int height, int width, int mineNum);
         void generatePrng();
 

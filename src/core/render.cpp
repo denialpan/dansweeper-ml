@@ -17,6 +17,7 @@ namespace Render {
     static Grid::Grid* grid = nullptr;
     static Grid::GridMetadata gridMetadata;
     static std::vector<std::vector<Grid::Cell>>* cells;
+    static std::pair<int, int> highlightTile;
 
     void Render::loadTexture() {
         Image texture = LoadImage("../resources/texture.png");
@@ -75,7 +76,21 @@ namespace Render {
             }
         };
 
+        // highlight tile
+        Rectangle tile = {
+            highlightTile.first * (float)Tile::TILE_SIZE,
+            highlightTile.second * (float)Tile::TILE_SIZE,
+            (float)Tile::TILE_SIZE,
+            (float)Tile::TILE_SIZE};
+        DrawRectangleRec(tile, Fade(YELLOW, 0.3f));
+        DrawRectangleLinesEx(tile, 1, RED);
+
         EndMode2D();
     }
+
+    void queueHighlightTile(int x, int y) {
+        highlightTile = {x, y};
+    }
+
 
 } // Render

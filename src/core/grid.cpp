@@ -7,6 +7,8 @@
 #include <chrono>
 #include <random>
 #include <numeric>
+#include <queue>
+#include <raylib.h>
 
 namespace Grid {
 
@@ -47,8 +49,12 @@ namespace Grid {
         // reset grid on multiboard runs
         initializeEmptyGrid(this->metadata.height, this->metadata.width, this->metadata.mineNum);
 
+        this->timeElapsed = 0.0f;
+        this->startTime = GetTime();
+        this->metadata.time = 0.0f;
         this->metadata.safeX = safeX;
         this->metadata.safeY = safeY;
+
         generatePrng();
 
         // populate grid with mines
@@ -87,7 +93,7 @@ namespace Grid {
                 cells[y][x].adjacentMines = count;
 
                 if (cells[y][x].adjacentMines == 0) {
-                    cells[y][x].renderTile = Tile::TILE_REVEALED;
+                    cells[y][x].renderTile = Tile::TILE_BLANK;
                 } else {
                     cells[y][x].renderTile = static_cast<Tile::TileId>(Tile::TILE_1 + (cells[y][x].adjacentMines - 1));
                 }
@@ -95,6 +101,76 @@ namespace Grid {
         }
 
     }
+
+    // bfs fill reveal
+    void Grid::reveal(int x, int y) {
+
+        if (validateCoordinates(x, y)) {
+
+            Cell& firstCell = this->cells[y][x];
+
+            // ignore
+            if (firstCell.revealed || firstCell.flagged) {
+                return;
+            }
+
+            if (firstCell.content == CELL_MINE) {
+                return;
+            }
+
+            std::queue<std::pair<int, int>> toReveal;
+            toReveal.push({x, y});
+
+            while (!toReveal.empty()) {
+                auto [x, y] = toReveal.front();
+                toReveal.pop();
+
+                if (x < 0 || x >= this->metadata.width || y < 0 || y >= this->metadata.height)
+                    continue;
+
+                Cell& cell = cells[y][x];
+                if (cell.revealed || cell.flagged)
+                    continue;
+
+                cell.revealed = true;
+
+                if (cell.adjacentMines == 0 && cell.content != CELL_MINE) {
+                    cell.renderTile = Tile::TILE_REVEALED;
+                    for (int dy = -1; dy <= 1; ++dy)
+                        for (int dx = -1; dx <= 1; ++dx)
+                            if (dx != 0 || dy != 0)
+                                toReveal.push({x + dx, y + dy});
+                } else {
+                    cell.renderTile = static_cast<Tile::TileId>(Tile::TILE_1 + (cell.adjacentMines - 1));
+                }
+            }
+
+        }
+
+    }
+
+    void Grid::flag(int x, int y) {
+        if (validateCoordinates(x, y)) {
+
+        }
+    }
+
+    void Grid::chord(int x, int y) {
+        if (validateCoordinates(x, y)) {
+
+        }
+    }
+
+    void Grid::updateTimer() {
+        const double now = GetTime();
+        timeElapsed = static_cast<float>(now - startTime);
+        metadata.time = timeElapsed;
+    }
+
+    bool Grid::validateCoordinates(int x, int y) {
+        return (x >= 0 && x < this->metadata.width) && (y >= 0 && y < this->metadata.height);
+    }
+
 
     void Grid::generatePrng() {
 

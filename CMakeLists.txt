@@ -10,10 +10,13 @@ add_executable(dansweeper_ml
         src/core/grid.cpp
         src/core/render.cpp
         src/core/controller.cpp
+        src/solver/algorithm/linearscan.cpp
         include/dansweeperml/core/grid.h
         include/dansweeperml/core/render.h
         include/dansweeperml/core/controller.h
         include/dansweeperml/core/tile.h
+        include/dansweeperml/solver/isolver.h
+        include/dansweeperml/solver/algorithm/linearscan.h
 )
 
 include_directories(

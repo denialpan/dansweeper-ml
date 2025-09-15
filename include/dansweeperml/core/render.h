@@ -15,6 +15,7 @@ namespace Render {
     void unloadTexture();
     void initializeRender(Camera2D& cam, Grid::Grid* grid);
     void renderThread();
+    void queueHighlightTile(int x, int y);
 
 } // Render
 
