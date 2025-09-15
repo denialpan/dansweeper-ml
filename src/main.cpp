@@ -64,7 +64,7 @@ void debug(Font font, Grid::Grid* grid) {
 
 }
 
-std::jthread startCellWalker(Grid::Grid* grid) {
+std::jthread solverThread(Grid::Grid* grid) {
 
     using namespace std::chrono_literals;
 
@@ -74,7 +74,7 @@ std::jthread startCellWalker(Grid::Grid* grid) {
 
         while (!st.stop_requested()) {
             solver->step(*grid);
-            std::this_thread::sleep_for(20ms);
+            std::this_thread::sleep_for(1ms);
         }
 
     });
@@ -89,7 +89,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(9, 9, 0.25f);
+    Grid::Grid* currentGrid = new Grid::Grid(17, 17, 0.25f);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
@@ -103,7 +103,7 @@ int main() {
 
     currentGrid->generateGrid(4, 4);
 
-    std::jthread walker = startCellWalker(currentGrid);
+    std::jthread walker = solverThread(currentGrid);
 
     while (!WindowShouldClose()) {
 
@@ -132,12 +132,12 @@ int main() {
 
         if (IsKeyPressed(KEY_LEFT)) {
             iterateRuntype--;
-            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype)) % 3 + 3);
+            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype + 3)) % 3);
         }
 
         if (IsKeyPressed(KEY_RIGHT)) {
             iterateRuntype++;
-            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype)) % 3 + 3);
+            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype + 3)) % 3);
         }
 
         BeginDrawing();

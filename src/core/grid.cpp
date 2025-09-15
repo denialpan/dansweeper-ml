@@ -71,7 +71,6 @@ namespace Grid {
             int flat = (idx[i] >= safeFlat) ? idx[i] + 1 : idx[i];
             int y = flat / this->metadata.width, x = flat % metadata.width;
             this->cells[y][x].content = CELL_MINE;
-            this->cells[y][x].renderTile = Tile::TILE_MINE_REVEALED;
         }
 
         // calculate adjacency tiles
@@ -92,11 +91,6 @@ namespace Grid {
 
                 cells[y][x].adjacentMines = count;
 
-                if (cells[y][x].adjacentMines == 0) {
-                    cells[y][x].renderTile = Tile::TILE_BLANK;
-                } else {
-                    cells[y][x].renderTile = static_cast<Tile::TileId>(Tile::TILE_1 + (cells[y][x].adjacentMines - 1));
-                }
             }
         }
 
@@ -115,7 +109,7 @@ namespace Grid {
             }
 
             if (firstCell.content == CELL_MINE) {
-                return;
+                endRevealAll(x, y);
             }
 
             std::queue<std::pair<int, int>> toReveal;
@@ -143,6 +137,7 @@ namespace Grid {
                 } else {
                     cell.renderTile = static_cast<Tile::TileId>(Tile::TILE_1 + (cell.adjacentMines - 1));
                 }
+
             }
 
         }
@@ -151,13 +146,46 @@ namespace Grid {
 
     void Grid::flag(int x, int y) {
         if (validateCoordinates(x, y)) {
-
+            if (cells[y][x].revealed == false) {
+                cells[y][x].flagged = (cells[y][x].flagged == true) ? false : true;
+                cells[y][x].renderTile = (cells[y][x].flagged == true) ? Tile::TILE_FLAG : Tile::TILE_BLANK;
+            }
         }
     }
 
     void Grid::chord(int x, int y) {
         if (validateCoordinates(x, y)) {
+            int flagCount = 0;
 
+            // Count flags around
+            for (int dy = -1; dy <= 1; ++dy) {
+                for (int dx = -1; dx <= 1; ++dx) {
+                    int nx = x + dx;
+                    int ny = y + dy;
+                    if (dx == 0 && dy == 0) continue;
+                    if (nx >= 0 && nx < this->metadata.width && ny >= 0 && ny < this->metadata.height) {
+                        if (cells[ny][nx].flagged)
+                            flagCount++;
+                    }
+                }
+            }
+
+            if (flagCount == cells[y][x].adjacentMines) {
+                // Reveal surrounding cells that are not flagged
+                for (int dy = -1; dy <= 1; ++dy) {
+                    for (int dx = -1; dx <= 1; ++dx) {
+                        int nx = x + dx;
+                        int ny = y + dy;
+                        if (dx == 0 && dy == 0) continue;
+                        if (nx >= 0 && nx < this->metadata.width && ny >= 0 && ny < this->metadata.height) {
+                            Cell& neighbor = cells[ny][nx];
+                            if (!neighbor.flagged && !neighbor.revealed) {
+                                reveal(nx, ny);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -185,6 +213,41 @@ namespace Grid {
         std::hash<std::string> hasher;
         this->metadata.prng = hasher(fullKey);
     }
+
+    bool Grid::checkWinCondition() {
+        for (int y = 0; y < this->metadata.height; ++y) {
+            for (int x = 0; x < this->metadata.width; ++x) {
+                const Cell& cell = cells[y][x];
+                if (cell.content == CELL_EMPTY && (cell.renderTile == Tile::TILE_BLANK || cell.renderTile == Tile::TILE_FLAG || cell.renderTile == Tile::TILE_QUESTION)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    void Grid::endRevealAll(int hitx, int hity) {
+        for (int y = 0; y < this->metadata.height; ++y) {
+            for (int x = 0; x < this->metadata.width; ++x) {
+                Cell& cell = cells[y][x];
+                if (cell.content == CELL_MINE) {
+                    if (cell.flagged) {
+                        continue;
+                    }
+
+                    if (!cell.revealed) {
+                        cell.revealed = true;
+                        cell.renderTile = Tile::TILE_MINE_REVEALED;
+                    }
+                } else if (cell.flagged) {
+                    cell.renderTile = Tile::TILE_MINE_WRONG;
+                }
+            }
+        }
+        cells[hity][hitx].renderTile = Tile::TILE_MINE_HIT;
+
+    }
+
 
 
     GridMetadata Grid::getMetadata() {

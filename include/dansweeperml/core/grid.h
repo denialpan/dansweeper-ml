@@ -74,6 +74,8 @@ namespace Grid {
         bool validateCoordinates(int x, int y);
         void initializeEmptyGrid(int height, int width, int mineNum);
         void generatePrng();
+        bool checkWinCondition();
+        void endRevealAll(int x, int y);
 
     };
 

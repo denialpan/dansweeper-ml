@@ -9,6 +9,8 @@
 #include "dansweeperml/core/grid.h"
 #include "dansweeperml/core/render.h"
 
+
+// THIS IS A TEST THAT IT MULTHREAD WITH HIGHLIGHTING WORKS
 namespace algorithmlinearscan {
 
     void LinearScan::step(Grid::Grid& grid) {
@@ -23,6 +25,7 @@ namespace algorithmlinearscan {
         }
 
         grid.reveal(x, y);
+
         Render::queueHighlightTile(x, y);
         steps++;
 
