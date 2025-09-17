@@ -13,7 +13,7 @@
 // THIS IS A TEST THAT IT MULTHREAD WITH HIGHLIGHTING WORKS
 namespace algorithmlinearscan {
 
-    void LinearScan::step(Grid::Grid& grid) {
+    bool LinearScan::step(Grid::Grid& grid) {
         x++;
         if (x > grid.getMetadata().height - 1) {
             y++;
@@ -28,7 +28,7 @@ namespace algorithmlinearscan {
 
         Render::queueHighlightTile(x, y);
         steps++;
-
+        return true;
     }
 
     int LinearScan::getSteps() {

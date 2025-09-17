@@ -12,7 +12,7 @@ class ISolver {
 public:
 
     virtual ~ISolver() = 0;
-    virtual void step(Grid::Grid& grid) = 0;
+    virtual bool step(Grid::Grid& grid) = 0;
     virtual int getSteps() = 0;
     virtual void reset() = 0;
 

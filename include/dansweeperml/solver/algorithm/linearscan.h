@@ -11,7 +11,7 @@
 namespace algorithmlinearscan {
     class LinearScan : public ISolver {
 
-        void step(Grid::Grid& grid) override;
+        bool step(Grid::Grid& grid) override;
         int getSteps() override;
         void reset() override;
 
