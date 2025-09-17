@@ -18,6 +18,11 @@ namespace Grid {
         CELL_MINE
     };
 
+    enum GridState {
+        ONGOING,
+        FINISHED
+    };
+
     // what defines grid
     struct GridMetadata {
         int height;
@@ -28,11 +33,7 @@ namespace Grid {
         int safeY;
         std::string seed64;
         float time;
-    };
-
-    enum GridState {
-        SOLVED,
-        UNSOLVED,
+        GridState gridState = ONGOING;
     };
 
     // cell interactable content
@@ -43,6 +44,8 @@ namespace Grid {
         bool revealed = false;
         bool flagged = false;
         int adjacentMines = 0;
+
+        bool operator==(const Cell&) const = default;
     };
 
     class Grid {
@@ -55,6 +58,8 @@ namespace Grid {
         GridMetadata getMetadata();
         std::vector<std::vector<Cell>>& getCells();
         void generateGrid(int safeX, int safeY);
+        bool getWinCondition();
+        Cell getCellProperties(int x, int y);
 
         void reveal(int x, int y);
         void flag(int x, int y);
@@ -74,7 +79,6 @@ namespace Grid {
         bool validateCoordinates(int x, int y);
         void initializeEmptyGrid(int height, int width, int mineNum);
         void generatePrng();
-        bool checkWinCondition();
         void endRevealAll(int x, int y);
 
     };
