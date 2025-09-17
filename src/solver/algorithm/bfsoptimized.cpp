@@ -6,7 +6,6 @@
 #include <dansweeperml/core/render.h>
 #include <dansweeperml/core/grid.h>
 #include <iostream>
-#include <format>
 #include <random>
 #include <vector>
 
@@ -48,7 +47,6 @@ namespace algorithmbfsoptimized {
 
                 auto [x, y] = revealedNumberTile;
 
-                std::cout << std::format("{} {}", x, y) << std::endl;
                 Render::queueHighlightTile(x, y);
                 std::vector<std::pair<int, int>> neighbors = getNeighbors(x, y, meta.width, meta.height);
                 Grid::Cell cellRevealedProperties = grid.getCellProperties(x, y);

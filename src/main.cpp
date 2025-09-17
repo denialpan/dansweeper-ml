@@ -113,6 +113,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
                 grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
                 solver = solvers[current].get();
                 solver->reset();
+                Render::resetHighlightTiles();
             }
 
             if (grid->getMetadata().gridState == Grid::FINISHED) {
@@ -120,10 +121,11 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
                 grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
                 solver->reset();
+                Render::resetHighlightTiles();
 
             }
 
-            std::this_thread::sleep_for(25ms);
+            std::this_thread::sleep_for(10ms);
         }
 
     });
@@ -137,7 +139,7 @@ int main() {
     const int screenHeight = 600;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
-    SetTargetFPS(240);
+    SetTargetFPS(60);
     Grid::Grid* currentGrid = new Grid::Grid(16, 30, 99);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");

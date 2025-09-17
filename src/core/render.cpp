@@ -9,8 +9,7 @@
 #include "dansweeperml/core/grid.h"
 #include "dansweeperml/core/tile.h"
 #include <algorithm>
-#include <format>
-#include <iostream>
+#include <deque>
 
 namespace Render {
 
@@ -20,6 +19,10 @@ namespace Render {
     static Grid::GridMetadata gridMetadata;
     static std::vector<std::vector<Grid::Cell>>* cells;
     static std::pair<int, int> highlightTile;
+    static std::deque<HighlightedTile> highlightedTiles;
+    static std::chrono::milliseconds highlightLifetime{150};
+    static size_t highlightedTilesMaxSizeTrail = 4096;
+    static std::mutex highlightedTilesMtx;
 
     void Render::loadTexture() {
         Image texture = LoadImage("../resources/texture.png");
@@ -78,22 +81,44 @@ namespace Render {
             }
         };
 
-        // highlight tile
-        Rectangle tile = {
-            highlightTile.first * (float)Tile::TILE_SIZE,
-            highlightTile.second * (float)Tile::TILE_SIZE,
-            (float)Tile::TILE_SIZE,
-            (float)Tile::TILE_SIZE};
-        DrawRectangleRec(tile, Fade(YELLOW, 0.3f));
-        DrawRectangleLinesEx(tile, 1, RED);
+        const auto now = std::chrono::steady_clock::now();
+        bool needsPrune = false;
+        for (const auto& tile : highlightedTiles) {
 
-        // std::cout << std::format("{} {}", highlightTile.first, highlightTile.second) << std::endl;
+            const auto age = now - tile.spawn;
+            if (age > highlightLifetime) {
+                needsPrune = true;
+                continue;
+            }
+
+            const float t = std::chrono::duration<float>(age / highlightLifetime).count();
+            const float alpha = 1.0f - t;
+
+            // highlight tile
+            Rectangle renderTile = {
+                tile.x * (float)Tile::TILE_SIZE,
+                tile.y * (float)Tile::TILE_SIZE,
+                (float)Tile::TILE_SIZE,
+                (float)Tile::TILE_SIZE};
+            DrawRectangleRec(renderTile, Fade(YELLOW, alpha));
+            DrawRectangleLinesEx(renderTile, 1, RED);
+
+        }
+
 
         EndMode2D();
     }
 
     void queueHighlightTile(int x, int y) {
-        highlightTile = {x, y};
+        std::lock_guard<std::mutex> lk(highlightedTilesMtx);
+        if (highlightedTiles.size() >= highlightedTilesMaxSizeTrail) {
+            highlightedTiles.pop_front();
+        }
+        highlightedTiles.push_back({x, y, std::chrono::steady_clock::now()});
+    }
+
+    void resetHighlightTiles() {
+        highlightedTiles.clear();
     }
 
 
