@@ -25,6 +25,22 @@ static int iterateRuntype;
 std::vector<std::unique_ptr<ISolver>> solvers;
 static int algorithmSelectionIndex = 0;
 
+std::atomic<bool> stepRequested = false;
+
+void controls(const Font &font) {
+
+    std::vector<std::string> listOfText;
+
+    listOfText.push_back(std::format("[->]: step forward once"));
+    listOfText.push_back(std::format("[a] [d]: cycle main solver type"));
+    listOfText.push_back(std::format("[w] [s]: cycle algorithm type"));
+    listOfText.push_back(std::format("[space]: reset board"));
+
+    for (int i = 0; i < listOfText.size(); i++) {
+        DrawTextEx(font, listOfText[i].c_str(), {10, GetScreenHeight() - (15.0f * i + 20)}, 13, 1, WHITE);
+    }
+}
+
 void debug(const Font &font, Grid::Grid* grid) {
 
     std::vector<std::string> listOfText;
@@ -71,11 +87,11 @@ void debug(const Font &font, Grid::Grid* grid) {
 
 }
 
-std::jthread solverThread(Grid::Grid* grid, int& selectionIndex) {
+std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSolver) {
 
     using namespace std::chrono_literals;
 
-    return std::jthread([grid, &selectionIndex](std::stop_token st) {
+    return std::jthread([grid, &selectionIndex, &autoRunSolver](std::stop_token st) {
 
         // register algorithmic solvers
         solvers.push_back(std::make_unique<algorithmlinearscan::LinearScan>());
@@ -134,9 +150,11 @@ int main() {
     Font customFont = LoadFontEx("../resources/ProggyClean.ttf", 13, 0, 250);
     SetTextureFilter(customFont.texture, TEXTURE_FILTER_POINT);
 
+    bool autoRunSolver = true;
+
     currentGrid->generateGrid(4, 4);
 
-    std::jthread walker = solverThread(currentGrid, algorithmSelectionIndex);
+    std::jthread walker = solverThread(currentGrid, algorithmSelectionIndex, autoRunSolver);
 
     while (!WindowShouldClose()) {
 
@@ -163,21 +181,30 @@ int main() {
             currentGrid->generateGrid(currentGrid->getMetadata().width / 2, currentGrid->getMetadata().height / 2);
         }
 
-        if (IsKeyPressed(KEY_LEFT)) {
+        if (IsKeyPressed(KEY_A)) {
             iterateRuntype--;
             runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype + 3)) % 3);
         }
 
-        if (IsKeyPressed(KEY_RIGHT)) {
+        if (IsKeyPressed(KEY_D)) {
             iterateRuntype++;
             runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype + 3)) % 3);
         }
 
-        if (IsKeyPressed(KEY_A)) {
+        if (IsKeyPressed(KEY_W)) {
             algorithmSelectionIndex = (algorithmSelectionIndex + 1) % solvers.size();
         }
-        if (IsKeyPressed(KEY_D)) {
+
+        if (IsKeyPressed(KEY_S)) {
             algorithmSelectionIndex = (algorithmSelectionIndex + solvers.size() - 1) % solvers.size();
+        }
+
+        if (IsKeyPressed(KEY_P)) {
+            autoRunSolver = !autoRunSolver;
+        }
+
+        if (IsKeyPressed(KEY_LEFT)) {
+            stepRequested.store(true, std::memory_order_relaxed);
         }
 
         BeginDrawing();
@@ -187,6 +214,7 @@ int main() {
         currentGrid->updateTimer();
 
         debug(customFont, currentGrid);
+        controls(customFont);
         EndDrawing();
 
     }
