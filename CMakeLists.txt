@@ -17,6 +17,8 @@ add_executable(dansweeper_ml
         include/dansweeperml/core/tile.h
         include/dansweeperml/solver/isolver.h
         include/dansweeperml/solver/algorithm/linearscan.h
+        src/solver/algorithm/bfsoptimized.cpp
+        include/dansweeperml/solver/algorithm/bfsoptimized.h
 )
 
 include_directories(

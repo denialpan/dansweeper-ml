@@ -7,7 +7,11 @@
 #include <thread>
 #include <memory>
 
+#include <dansweeperml/solver/isolver.h>
+
+#include "dansweeperml/solver/algorithm/bfsoptimized.h"
 #include "dansweeperml/solver/algorithm/linearscan.h"
+
 
 enum RunType {
     RUN_ALGORITHM,
@@ -18,7 +22,10 @@ enum RunType {
 static RunType runtype = RUN_ALGORITHM;
 static int iterateRuntype;
 
-void debug(Font font, Grid::Grid* grid) {
+std::vector<std::unique_ptr<ISolver>> solvers;
+static int algorithmSelectionIndex = 0;
+
+void debug(const Font &font, Grid::Grid* grid) {
 
     std::vector<std::string> listOfText;
     Grid::GridMetadata metadata = grid->getMetadata();
@@ -64,17 +71,43 @@ void debug(Font font, Grid::Grid* grid) {
 
 }
 
-std::jthread solverThread(Grid::Grid* grid) {
+std::jthread solverThread(Grid::Grid* grid, int& selectionIndex) {
 
     using namespace std::chrono_literals;
 
-    return std::jthread([grid](std::stop_token st) {
+    return std::jthread([grid, &selectionIndex](std::stop_token st) {
 
-        std::unique_ptr<ISolver> solver = std::make_unique<algorithmlinearscan::LinearScan>();
+        // register algorithmic solvers
+        solvers.push_back(std::make_unique<algorithmlinearscan::LinearScan>());
+        solvers.push_back(std::make_unique<algorithmbfsoptimized::BFSUnoptimized>());
+
+        size_t current = solvers.empty() ? 0 : (selectionIndex % solvers.size());
+        ISolver* solver = solvers[current].get();
 
         while (!st.stop_requested()) {
-            solver->step(*grid);
-            std::this_thread::sleep_for(1ms);
+
+            size_t now = solvers.empty() ? 0 : (selectionIndex % solvers.size());
+            if (now != current) {
+                current = now;
+                solver = solvers[current].get();
+                solver->reset();
+            }
+
+            if (!solver->step(*grid)) {
+                grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
+                solver = solvers[current].get();
+                solver->reset();
+            }
+
+            if (grid->getMetadata().gridState == Grid::FINISHED) {
+                std::this_thread::sleep_for(50ms);
+
+                grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
+                solver->reset();
+
+            }
+
+            std::this_thread::sleep_for(10ms);
         }
 
     });
@@ -89,7 +122,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(17, 17, 0.25f);
+    Grid::Grid* currentGrid = new Grid::Grid(16, 16, 40);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
@@ -103,7 +136,7 @@ int main() {
 
     currentGrid->generateGrid(4, 4);
 
-    std::jthread walker = solverThread(currentGrid);
+    std::jthread walker = solverThread(currentGrid, algorithmSelectionIndex);
 
     while (!WindowShouldClose()) {
 
@@ -127,7 +160,7 @@ int main() {
 
         // debug new board
         if (IsKeyDown(KEY_SPACE)) {
-            currentGrid->generateGrid(4, 4);
+            currentGrid->generateGrid(currentGrid->getMetadata().width / 2, currentGrid->getMetadata().height / 2);
         }
 
         if (IsKeyPressed(KEY_LEFT)) {
@@ -138,6 +171,13 @@ int main() {
         if (IsKeyPressed(KEY_RIGHT)) {
             iterateRuntype++;
             runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype + 3)) % 3);
+        }
+
+        if (IsKeyPressed(KEY_A)) {
+            algorithmSelectionIndex = (algorithmSelectionIndex + 1) % solvers.size();
+        }
+        if (IsKeyPressed(KEY_D)) {
+            algorithmSelectionIndex = (algorithmSelectionIndex + solvers.size() - 1) % solvers.size();
         }
 
         BeginDrawing();

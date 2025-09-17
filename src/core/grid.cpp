@@ -20,7 +20,6 @@ namespace Grid {
         initializeEmptyGrid(height, width, height * width * mineDensity);
     }
 
-
     // empty grid before safexy and bombs are placed
     void Grid::initializeEmptyGrid(int height, int width, int mineNum) {
 
@@ -54,6 +53,7 @@ namespace Grid {
         this->metadata.time = 0.0f;
         this->metadata.safeX = safeX;
         this->metadata.safeY = safeY;
+        this->metadata.gridState = ONGOING;
 
         generatePrng();
 
@@ -141,6 +141,7 @@ namespace Grid {
             }
 
         }
+        getWinCondition();
 
     }
 
@@ -199,7 +200,6 @@ namespace Grid {
         return (x >= 0 && x < this->metadata.width) && (y >= 0 && y < this->metadata.height);
     }
 
-
     void Grid::generatePrng() {
 
         auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -214,7 +214,7 @@ namespace Grid {
         this->metadata.prng = hasher(fullKey);
     }
 
-    bool Grid::checkWinCondition() {
+    bool Grid::getWinCondition() {
         for (int y = 0; y < this->metadata.height; ++y) {
             for (int x = 0; x < this->metadata.width; ++x) {
                 const Cell& cell = cells[y][x];
@@ -223,8 +223,14 @@ namespace Grid {
                 }
             }
         }
+        metadata.gridState = FINISHED;
         return true;
     }
+
+    Cell Grid::getCellProperties(int x, int y) {
+        return cells[y][x];
+    }
+
 
     void Grid::endRevealAll(int hitx, int hity) {
         for (int y = 0; y < this->metadata.height; ++y) {
@@ -245,10 +251,9 @@ namespace Grid {
             }
         }
         cells[hity][hitx].renderTile = Tile::TILE_MINE_HIT;
+        metadata.gridState = FINISHED;
 
     }
-
-
 
     GridMetadata Grid::getMetadata() {
         return this->metadata;
