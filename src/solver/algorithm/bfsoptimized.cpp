@@ -28,7 +28,7 @@ namespace algorithmbfsoptimized {
             // heuristic values if needed
             float heuristicRatio = 1.0f;
             std::pair<int, int> heuristicPair = {-1, -1};
-            // get all revealed NUMBER tiles
+            // get all revealed NUMBER tiles i.e. "nodes"
             for (int i = 0; i < meta.height; i++) {
 
                 for (int j = 0; j < meta.width; j++) {
@@ -47,6 +47,9 @@ namespace algorithmbfsoptimized {
                 }
 
                 auto [x, y] = revealedNumberTile;
+
+                std::cout << std::format("{} {}", x, y) << std::endl;
+                Render::queueHighlightTile(x, y);
                 std::vector<std::pair<int, int>> neighbors = getNeighbors(x, y, meta.width, meta.height);
                 Grid::Cell cellRevealedProperties = grid.getCellProperties(x, y);
 
@@ -84,7 +87,6 @@ namespace algorithmbfsoptimized {
                     // unnecessary chord again if all thats around is flagged == unrevealed
                     if (unrevealedNeighbors != flaggedNeighbors) {
                         grid.chord(x, y);
-                        Render::queueHighlightTile(x, y);
                         chordOrFlagged = true;
                     }
 

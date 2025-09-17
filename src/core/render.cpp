@@ -9,6 +9,8 @@
 #include "dansweeperml/core/grid.h"
 #include "dansweeperml/core/tile.h"
 #include <algorithm>
+#include <format>
+#include <iostream>
 
 namespace Render {
 
@@ -84,6 +86,8 @@ namespace Render {
             (float)Tile::TILE_SIZE};
         DrawRectangleRec(tile, Fade(YELLOW, 0.3f));
         DrawRectangleLinesEx(tile, 1, RED);
+
+        // std::cout << std::format("{} {}", highlightTile.first, highlightTile.second) << std::endl;
 
         EndMode2D();
     }

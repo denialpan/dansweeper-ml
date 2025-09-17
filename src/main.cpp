@@ -23,7 +23,7 @@ static RunType runtype = RUN_ALGORITHM;
 static int iterateRuntype;
 
 std::vector<std::unique_ptr<ISolver>> solvers;
-static int algorithmSelectionIndex = 0;
+static int algorithmSelectionIndex = 1;
 
 std::atomic<bool> stepRequested = false;
 
@@ -116,14 +116,14 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             }
 
             if (grid->getMetadata().gridState == Grid::FINISHED) {
-                std::this_thread::sleep_for(50ms);
+                std::this_thread::sleep_for(500ms);
 
                 grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
                 solver->reset();
 
             }
 
-            std::this_thread::sleep_for(10ms);
+            std::this_thread::sleep_for(25ms);
         }
 
     });
@@ -138,7 +138,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(16, 16, 40);
+    Grid::Grid* currentGrid = new Grid::Grid(16, 30, 99);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 

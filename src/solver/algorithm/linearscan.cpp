@@ -15,7 +15,7 @@ namespace algorithmlinearscan {
 
     bool LinearScan::step(Grid::Grid& grid) {
         x++;
-        if (x > grid.getMetadata().height - 1) {
+        if (x > grid.getMetadata().width - 1) {
             y++;
             x = 0;
         }
