@@ -19,6 +19,15 @@ enum RunType {
     LEARN_AGENT,
 };
 
+struct SolverStats {
+    int steps;
+    int boardsRun;
+    int win;
+    int loss;
+    int total;
+    float winrate;
+};
+
 static RunType runtype = RUN_ALGORITHM;
 static int iterateRuntype;
 
@@ -26,6 +35,19 @@ std::vector<std::unique_ptr<ISolver>> solvers;
 static int algorithmSelectionIndex = 1;
 
 std::atomic<bool> stepRequested = false;
+
+void solverstats(const Font &font) {
+    std::vector<std::string> listOfText;
+
+    listOfText.push_back(std::format("[->]: step forward once"));
+    listOfText.push_back(std::format("[a] [d]: cycle main solver type"));
+    listOfText.push_back(std::format("[w] [s]: cycle algorithm type"));
+    listOfText.push_back(std::format("[space]: reset board"));
+
+    for (int i = 0; i < listOfText.size(); i++) {
+        DrawTextEx(font, listOfText[i].c_str(), {10, GetScreenHeight() - (15.0f * i + 20)}, 13, 1, WHITE);
+    }
+}
 
 void controls(const Font &font) {
 
@@ -91,7 +113,16 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
     using namespace std::chrono_literals;
 
-    return std::jthread([grid, &selectionIndex, &autoRunSolver](std::stop_token st) {
+    auto resetSolverStats = [](SolverStats s) {
+        s.steps = 0;
+        s.boardsRun = 0;
+        s.win = 0;
+        s.loss = 0;
+        s.total = 0;
+        s.winrate = 0.0f;
+    };
+
+    return std::jthread([grid, &selectionIndex, &autoRunSolver, resetSolverStats](std::stop_token st) {
 
         // register algorithmic solvers
         solvers.push_back(std::make_unique<algorithmlinearscan::LinearScan>());
@@ -99,21 +130,29 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
         size_t current = solvers.empty() ? 0 : (selectionIndex % solvers.size());
         ISolver* solver = solvers[current].get();
+        SolverStats stats;
+
+        auto resetRun = [&] {
+            const auto meta = grid->getMetadata();
+            grid->generateGrid(meta.width / 2, meta.height / 2);
+            solver = solvers[current].get();
+            solver->reset();
+            Render::resetHighlightTiles();
+        };
 
         while (!st.stop_requested()) {
-
             size_t now = solvers.empty() ? 0 : (selectionIndex % solvers.size());
             if (now != current) {
                 current = now;
                 solver = solvers[current].get();
                 solver->reset();
+                resetSolverStats(stats);
             }
 
-            if (!solver->step(*grid)) {
-                grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
-                solver = solvers[current].get();
-                solver->reset();
-                Render::resetHighlightTiles();
+            if (autoRunSolver || stepRequested.exchange(false)) {
+                if (!solver->step(*grid)) {
+                    resetRun();
+                }
             }
 
             if (grid->getMetadata().gridState == Grid::FINISHED) {
@@ -141,7 +180,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(16, 43, 0.13f);
+    Grid::Grid* currentGrid = new Grid::Grid(50, 50, 0.135f);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
@@ -206,7 +245,7 @@ int main() {
             autoRunSolver = !autoRunSolver;
         }
 
-        if (IsKeyPressed(KEY_LEFT)) {
+        if (IsKeyPressed(KEY_RIGHT)) {
             stepRequested.store(true, std::memory_order_relaxed);
         }
 
