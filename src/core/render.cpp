@@ -17,10 +17,9 @@ namespace Render {
     static Camera2D* camera = nullptr;
     static Grid::Grid* grid = nullptr;
     static Grid::GridMetadata gridMetadata;
-    static std::vector<std::vector<Grid::Cell>>* cells;
-    static std::pair<int, int> highlightTile;
+
     static std::deque<HighlightedTile> highlightedTiles;
-    static std::chrono::milliseconds highlightLifetime{150};
+    static std::chrono::milliseconds highlightLifetime{500};
     static size_t highlightedTilesMaxSizeTrail = 4096;
     static std::mutex highlightedTilesMtx;
 
@@ -38,7 +37,6 @@ namespace Render {
 
         camera = &c;
         grid = g;
-        cells = &grid->getCells();
         gridMetadata = grid->getMetadata();
 
         int mapWidthPixels = grid->getMetadata().width * Tile::TILE_SIZE;
@@ -57,6 +55,8 @@ namespace Render {
 
         camera->offset = {GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f};
 
+        const auto& cellsRef = grid->getCells();      // reference, not pointer
+
         BeginMode2D(*camera);
 
         // CULLING: compute visible tile bounds
@@ -71,7 +71,7 @@ namespace Render {
 
         for (int y = startY; y < endY; y++) {
             for (int x = startX; x < endX; x++) {
-                int tileID = (*cells)[y][x].renderTile;
+                int tileID = cellsRef[y][x].renderTile;
                 int srcX = (tileID % Tile::TILE_ROW_COL) * Tile::TILE_SIZE;
                 int srcY = (tileID / Tile::TILE_ROW_COL) * Tile::TILE_SIZE;
 
@@ -81,28 +81,40 @@ namespace Render {
             }
         };
 
+        std::unique_lock lk(highlightedTilesMtx); // locks immediately
+        std::deque<HighlightedTile> trailCopy = highlightedTiles;
+        lk.unlock();
+
         const auto now = std::chrono::steady_clock::now();
         bool needsPrune = false;
-        for (const auto& tile : highlightedTiles) {
 
-            const auto age = now - tile.spawn;
-            if (age > highlightLifetime) {
-                needsPrune = true;
-                continue;
-            }
+        for (const auto& tile : trailCopy) {
+            auto age = now - tile.spawn;
+            if (age > highlightLifetime) { needsPrune = true; continue; }
 
-            const float t = std::chrono::duration<float>(age / highlightLifetime).count();
-            const float alpha = 1.0f - t;
+            float t = std::clamp(std::chrono::duration<float>(age) / std::chrono::duration<float>(highlightLifetime), 0.0f, 1.0f);
+            float alpha = 1.0f - t;
 
-            // highlight tile
-            Rectangle renderTile = {
+            Rectangle r {
                 tile.x * (float)Tile::TILE_SIZE,
                 tile.y * (float)Tile::TILE_SIZE,
                 (float)Tile::TILE_SIZE,
-                (float)Tile::TILE_SIZE};
-            DrawRectangleRec(renderTile, Fade(YELLOW, alpha));
-            DrawRectangleLinesEx(renderTile, 1, RED);
+                (float)Tile::TILE_SIZE
+            };
 
+            DrawRectangleRec(r, Fade(YELLOW, alpha * 0.35f));
+            DrawRectangleLinesEx(r, 1, Fade(RED, alpha * 0.35f));
+        }
+
+        // prune deque of excess tiles
+        if (needsPrune) {
+            std::lock_guard<std::mutex> lkClear(highlightedTilesMtx);
+            const auto now2 = std::chrono::steady_clock::now();
+
+            auto& dq = highlightedTiles;
+            std::erase_if(dq, [&](const HighlightedTile& h) {
+                return (now2 - h.spawn) > highlightLifetime;
+            });
         }
 
 

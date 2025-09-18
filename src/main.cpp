@@ -53,7 +53,7 @@ void debug(const Font &font, Grid::Grid* grid) {
     listOfText.push_back(std::format("created by daniel pan"));
     listOfText.push_back(std::format("fps: {}", GetFPS()));
     listOfText.push_back(std::format("dims: {}x{}", metadata.width, metadata.height));
-    listOfText.push_back(std::format("mines: {}", metadata.mineNum));
+    listOfText.push_back(std::format("mines: {}, density: {}", metadata.mineNum, static_cast<float>(metadata.mineNum) / (metadata.width * metadata.height)));
     listOfText.push_back(std::format("prng: {}", metadata.prng));
     listOfText.push_back(std::format("safe: {}, {}", metadata.safeX, metadata.safeY));
     listOfText.push_back(std::format("time: {}", metadata.time));
@@ -117,7 +117,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             }
 
             if (grid->getMetadata().gridState == Grid::FINISHED) {
-                std::this_thread::sleep_for(500ms);
+                std::this_thread::sleep_for(1000ms);
 
                 grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
                 solver->reset();
@@ -125,7 +125,8 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
             }
 
-            std::this_thread::sleep_for(10ms);
+            std::this_thread::sleep_for(50ms);
+
         }
 
     });
@@ -139,8 +140,8 @@ int main() {
     const int screenHeight = 600;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
-    SetTargetFPS(60);
-    Grid::Grid* currentGrid = new Grid::Grid(16, 30, 99);
+    SetTargetFPS(240);
+    Grid::Grid* currentGrid = new Grid::Grid(16, 43, 0.13f);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
