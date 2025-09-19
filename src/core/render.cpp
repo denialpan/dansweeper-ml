@@ -23,6 +23,7 @@ namespace Render {
     static std::chrono::milliseconds highlightLifetime{500};
     static size_t highlightedTilesMaxSizeTrail = 4096;
     static std::mutex highlightedTilesMtx;
+    static bool drawHighlight = true;
 
     void Render::loadTexture() {
         Image texture = LoadImage("../resources/texture.png");
@@ -50,13 +51,16 @@ namespace Render {
 
     }
 
-    void Render::renderThread() {
+    void Render::renderThread(bool drawTrail) {
+
+        drawHighlight = drawTrail;
 
         if (gridMetadata.width <= 0 || gridMetadata.height <= 0) return;
 
         camera->offset = {GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f};
 
-        const auto& cellsRef = grid->getCells();      // reference, not pointer
+        const auto& cellsRef = grid->getCells();
+
 
         BeginMode2D(*camera);
 
@@ -82,49 +86,60 @@ namespace Render {
             }
         };
 
-        std::unique_lock lk(highlightedTilesMtx); // locks immediately
-        std::deque<HighlightedTile> trailCopy = highlightedTiles;
-        lk.unlock();
+        if (drawHighlight) {
 
-        const auto now = std::chrono::steady_clock::now();
-        bool needsPrune = false;
+            std::unique_lock lk(highlightedTilesMtx); // locks immediately
+            std::deque<HighlightedTile> trailCopy = highlightedTiles;
+            lk.unlock();
 
-        for (const auto& tile : trailCopy) {
-            auto age = now - tile.spawn;
-            if (age > highlightLifetime) { needsPrune = true; continue; }
+            const auto now = std::chrono::steady_clock::now();
+            bool needsPrune = false;
 
-            float t = std::clamp(std::chrono::duration<float>(age) / std::chrono::duration<float>(highlightLifetime), 0.0f, 1.0f);
-            float alpha = 1.0f - t;
+            for (const auto& tile : trailCopy) {
+                auto age = now - tile.spawn;
+                if (age > highlightLifetime) { needsPrune = true; continue; }
 
-            assert(tile.y >= 0 && tile.y < gridMetadata.height && tile.x >= 0 && tile.x < gridMetadata.width);
+                float t = std::clamp(std::chrono::duration<float>(age) / std::chrono::duration<float>(highlightLifetime), 0.0f, 1.0f);
+                float alpha = 1.0f - t;
 
-            Rectangle r {
-                tile.x * (float)Tile::TILE_SIZE,
-                tile.y * (float)Tile::TILE_SIZE,
-                (float)Tile::TILE_SIZE,
-                (float)Tile::TILE_SIZE
-            };
+                assert(tile.y >= 0 && tile.y < gridMetadata.height && tile.x >= 0 && tile.x < gridMetadata.width);
 
-            DrawRectangleRec(r, Fade(YELLOW, alpha * 0.35f));
-            DrawRectangleLinesEx(r, 1, Fade(RED, alpha * 0.35f));
+                Rectangle r {
+                    tile.x * (float)Tile::TILE_SIZE,
+                    tile.y * (float)Tile::TILE_SIZE,
+                    (float)Tile::TILE_SIZE,
+                    (float)Tile::TILE_SIZE
+                };
+
+                DrawRectangleRec(r, Fade(YELLOW, alpha * 0.35f));
+                DrawRectangleLinesEx(r, 1, Fade(RED, alpha * 0.35f));
+            }
+
+            // prune deque of excess tiles
+            if (needsPrune) {
+                std::lock_guard<std::mutex> lkClear(highlightedTilesMtx);
+                const auto now2 = std::chrono::steady_clock::now();
+
+                auto& dq = highlightedTiles;
+                std::erase_if(dq, [&](const HighlightedTile& h) {
+                    return (now2 - h.spawn) > highlightLifetime;
+                });
+            }
+
         }
 
-        // prune deque of excess tiles
-        if (needsPrune) {
-            std::lock_guard<std::mutex> lkClear(highlightedTilesMtx);
-            const auto now2 = std::chrono::steady_clock::now();
 
-            auto& dq = highlightedTiles;
-            std::erase_if(dq, [&](const HighlightedTile& h) {
-                return (now2 - h.spawn) > highlightLifetime;
-            });
-        }
 
 
         EndMode2D();
     }
 
     void queueHighlightTile(int x, int y) {
+
+        if (!drawHighlight) {
+            return;
+        }
+
         if (x < 0 || x >= gridMetadata.width || y < 0 || y >= gridMetadata.height) {
             return;
         }

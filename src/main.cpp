@@ -64,6 +64,7 @@ void controls(const Font &font) {
     std::vector<std::string> listOfText;
 
     listOfText.push_back(std::format("[->]: step forward once"));
+    listOfText.push_back(std::format("[h]: toggle highlight"));
     listOfText.push_back(std::format("[a] [d]: cycle main solver type"));
     listOfText.push_back(std::format("[w] [s]: cycle algorithm type"));
     listOfText.push_back(std::format("[space]: reset board"));
@@ -156,7 +157,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             // request generate grid
             gResetReq.store(true, std::memory_order_release);
             while (!gResetDone.load(std::memory_order_acquire) && !st.stop_requested()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
             gResetDone.store(false, std::memory_order_release);
 
@@ -205,7 +206,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
             }
 
-            std::this_thread::sleep_for(10ms);
+            std::this_thread::sleep_for(1ms);
 
         }
 
@@ -233,6 +234,7 @@ int main() {
     Font customFont = LoadFontEx("../resources/ProggyClean.ttf", 13, 0, 250);
     SetTextureFilter(customFont.texture, TEXTURE_FILTER_POINT);
 
+    bool drawHighlight = false;
     bool autoRunSolver = true;
 
     currentGrid->generateGrid(4, 4);
@@ -297,10 +299,14 @@ int main() {
             stepRequested.store(true, std::memory_order_relaxed);
         }
 
+        if (IsKeyPressed(KEY_H)) {
+            drawHighlight = !drawHighlight;
+        }
+
         BeginDrawing();
 
         ClearBackground(BLACK);
-        Render::renderThread();
+        Render::renderThread(drawHighlight);
         currentGrid->updateTimer();
 
         debug(customFont, currentGrid);
