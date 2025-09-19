@@ -24,7 +24,7 @@ struct SolverStats {
     int totalSteps = 0;
     float time = 0.0f;
     float totalTime = 0.0f;
-    int boardsRun = 0;
+    int boardsRun = 1;
     int win = 0;
     int lose = 0;
     float winrate = 0.0f;
@@ -216,7 +216,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(16, 16, 0.1f);
+    Grid::Grid* currentGrid = new Grid::Grid(9, 9, 10);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
