@@ -223,7 +223,7 @@ namespace Grid {
                 }
             }
         }
-        metadata.gridState = FINISHED;
+        metadata.gridState = FINISHED_WIN;
         return true;
     }
 
@@ -251,7 +251,7 @@ namespace Grid {
             }
         }
         cells[hity][hitx].renderTile = Tile::TILE_MINE_HIT;
-        metadata.gridState = FINISHED;
+        metadata.gridState = FINISHED_LOSE;
 
     }
 

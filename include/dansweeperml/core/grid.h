@@ -20,7 +20,8 @@ namespace Grid {
 
     enum GridState {
         ONGOING,
-        FINISHED
+        FINISHED_WIN,
+        FINISHED_LOSE,
     };
 
     // what defines grid

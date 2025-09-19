@@ -20,12 +20,16 @@ enum RunType {
 };
 
 struct SolverStats {
-    int steps;
-    int boardsRun;
-    int win;
-    int loss;
-    int total;
-    float winrate;
+    int steps = 0;
+    int totalSteps = 0;
+    float time = 0.0f;
+    float totalTime = 0.0f;
+    int boardsRun = 0;
+    int win = 0;
+    int lose = 0;
+    float winrate = 0.0f;
+    float averageSteps = 0.0f;
+    float averageTime = 0.0f;
 };
 
 static RunType runtype = RUN_ALGORITHM;
@@ -35,17 +39,22 @@ std::vector<std::unique_ptr<ISolver>> solvers;
 static int algorithmSelectionIndex = 1;
 
 std::atomic<bool> stepRequested = false;
+static SolverStats stats;
 
 void solverstats(const Font &font) {
     std::vector<std::string> listOfText;
 
-    listOfText.push_back(std::format("[->]: step forward once"));
-    listOfText.push_back(std::format("[a] [d]: cycle main solver type"));
-    listOfText.push_back(std::format("[w] [s]: cycle algorithm type"));
-    listOfText.push_back(std::format("[space]: reset board"));
+    listOfText.push_back(std::format("average steps: {}", stats.averageSteps));
+    listOfText.push_back(std::format("average time: {}", stats.averageTime));
+    listOfText.push_back(std::format("winrate: {}", stats.winrate));
+    listOfText.push_back(std::format("boards run: {}", stats.boardsRun));
+    listOfText.push_back(std::format("time: {}", stats.time));
+    listOfText.push_back(std::format("steps: {}", stats.steps));
+    listOfText.push_back(std::format("lose: {}", stats.lose));
+    listOfText.push_back(std::format("win: {}", stats.win));
 
     for (int i = 0; i < listOfText.size(); i++) {
-        DrawTextEx(font, listOfText[i].c_str(), {10, GetScreenHeight() - (15.0f * i + 20)}, 13, 1, WHITE);
+        DrawTextEx(font, listOfText[i].c_str(), {10, GetScreenHeight() / 2 - (15.0f * i + 20)}, 13, 1, WHITE);
     }
 }
 
@@ -117,9 +126,13 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
         s.steps = 0;
         s.boardsRun = 0;
         s.win = 0;
-        s.loss = 0;
-        s.total = 0;
+        s.lose = 0;
         s.winrate = 0.0f;
+        s.averageSteps = 0.0f;
+        s.averageTime = 0.0f;
+        s.time = 0;
+        s.totalSteps = 0;
+        s.totalTime = 0;
     };
 
     return std::jthread([grid, &selectionIndex, &autoRunSolver, resetSolverStats](std::stop_token st) {
@@ -130,17 +143,30 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
         size_t current = solvers.empty() ? 0 : (selectionIndex % solvers.size());
         ISolver* solver = solvers[current].get();
-        SolverStats stats;
 
         auto resetRun = [&] {
             const auto meta = grid->getMetadata();
+
+            stats.time = meta.time;
+            stats.totalTime += meta.time;
+            stats.totalSteps += solver->getSteps();
+
+            std::this_thread::sleep_for(1000ms);
+
             grid->generateGrid(meta.width / 2, meta.height / 2);
             solver = solvers[current].get();
             solver->reset();
             Render::resetHighlightTiles();
+
+            stats.steps = 0;
+            stats.boardsRun++;
+
+            stats.averageSteps = stats.totalSteps / stats.boardsRun;
+            stats.averageTime = stats.totalTime / stats.boardsRun;
         };
 
         while (!st.stop_requested()) {
+
             size_t now = solvers.empty() ? 0 : (selectionIndex % solvers.size());
             if (now != current) {
                 current = now;
@@ -150,17 +176,27 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             }
 
             if (autoRunSolver || stepRequested.exchange(false)) {
+                stats.steps++;
                 if (!solver->step(*grid)) {
                     resetRun();
                 }
             }
 
-            if (grid->getMetadata().gridState == Grid::FINISHED) {
-                std::this_thread::sleep_for(1000ms);
+            auto currentGridState = grid->getMetadata().gridState;
 
-                grid->generateGrid(grid->getMetadata().width / 2, grid->getMetadata().height / 2);
-                solver->reset();
-                Render::resetHighlightTiles();
+            if (currentGridState == Grid::FINISHED_LOSE || currentGridState == Grid::FINISHED_WIN) {
+
+                switch (currentGridState) {
+                    case Grid::FINISHED_LOSE:
+                        stats.lose++;
+                        break;
+                    case Grid::FINISHED_WIN:
+                        stats.win++;
+                        break;
+                }
+
+                stats.winrate = static_cast<float>(stats.win) / stats.boardsRun;
+                resetRun();
 
             }
 
@@ -180,7 +216,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(50, 50, 0.135f);
+    Grid::Grid* currentGrid = new Grid::Grid(16, 16, 0.1f);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
@@ -257,6 +293,8 @@ int main() {
 
         debug(customFont, currentGrid);
         controls(customFont);
+        solverstats(customFont);
+
         EndDrawing();
 
     }

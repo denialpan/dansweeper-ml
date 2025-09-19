@@ -152,6 +152,7 @@ namespace algorithmbfsoptimized {
                 return false;
             }
 
+            steps++;
             return true;
         }
 
