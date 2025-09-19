@@ -156,7 +156,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             // request generate grid
             gResetReq.store(true, std::memory_order_release);
             while (!gResetDone.load(std::memory_order_acquire) && !st.stop_requested()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
             gResetDone.store(false, std::memory_order_release);
 
@@ -205,7 +205,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
             }
 
-            std::this_thread::sleep_for(50ms);
+            std::this_thread::sleep_for(10ms);
 
         }
 
@@ -311,6 +311,7 @@ int main() {
 
     }
 
+    walker.request_stop();
     Render::unloadTexture();
     CloseWindow();
     return 0;

@@ -9,6 +9,7 @@
 #include "dansweeperml/core/grid.h"
 #include "dansweeperml/core/tile.h"
 #include <algorithm>
+#include <cassert>
 #include <deque>
 
 namespace Render {
@@ -95,6 +96,8 @@ namespace Render {
             float t = std::clamp(std::chrono::duration<float>(age) / std::chrono::duration<float>(highlightLifetime), 0.0f, 1.0f);
             float alpha = 1.0f - t;
 
+            assert(tile.y >= 0 && tile.y < gridMetadata.height && tile.x >= 0 && tile.x < gridMetadata.width);
+
             Rectangle r {
                 tile.x * (float)Tile::TILE_SIZE,
                 tile.y * (float)Tile::TILE_SIZE,
@@ -122,6 +125,9 @@ namespace Render {
     }
 
     void queueHighlightTile(int x, int y) {
+        if (x < 0 || x >= gridMetadata.width || y < 0 || y >= gridMetadata.height) {
+            return;
+        }
         std::lock_guard<std::mutex> lk(highlightedTilesMtx);
         if (highlightedTiles.size() >= highlightedTilesMaxSizeTrail) {
             highlightedTiles.pop_front();
