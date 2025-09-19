@@ -8,10 +8,8 @@
 #include <memory>
 
 #include <dansweeperml/solver/isolver.h>
-
-#include "dansweeperml/solver/algorithm/bfsoptimized.h"
-#include "dansweeperml/solver/algorithm/linearscan.h"
-
+#include <dansweeperml/solver/algorithm/bfsoptimized.h>
+#include <dansweeperml/solver/algorithm/linearscan.h>
 
 enum RunType {
     RUN_ALGORITHM,
@@ -39,6 +37,9 @@ std::vector<std::unique_ptr<ISolver>> solvers;
 static int algorithmSelectionIndex = 1;
 
 std::atomic<bool> stepRequested = false;
+std::atomic<bool> gResetReq{false};
+std::atomic<bool> gResetDone{false};
+
 static SolverStats stats;
 
 void solverstats(const Font &font) {
@@ -151,9 +152,14 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             stats.totalTime += meta.time;
             stats.totalSteps += solver->getSteps();
 
-            std::this_thread::sleep_for(1000ms);
 
-            grid->generateGrid(meta.width / 2, meta.height / 2);
+            // request generate grid
+            gResetReq.store(true, std::memory_order_release);
+            while (!gResetDone.load(std::memory_order_acquire) && !st.stop_requested()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            gResetDone.store(false, std::memory_order_release);
+
             solver = solvers[current].get();
             solver->reset();
             Render::resetHighlightTiles();
@@ -183,7 +189,6 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             }
 
             auto currentGridState = grid->getMetadata().gridState;
-
             if (currentGridState == Grid::FINISHED_LOSE || currentGridState == Grid::FINISHED_WIN) {
 
                 switch (currentGridState) {
@@ -239,6 +244,13 @@ int main() {
         Controller::cameraZoom();
         Controller::cameraPan();
         Controller::cameraHover();
+
+        // regenerate grid request
+        if (gResetReq.exchange(false, std::memory_order_acq_rel)) {
+            const auto meta = currentGrid->getMetadata();
+            currentGrid->generateGrid(meta.width / 2, meta.height / 2);
+            gResetDone.store(true, std::memory_order_release);
+        }
 
         switch (runtype) {
             case RUN_ALGORITHM:
