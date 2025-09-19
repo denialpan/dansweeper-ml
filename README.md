@@ -21,6 +21,8 @@ texture credit: https://github.com/Minesweeper-World/MS-Texture
 
 #### solvers
 - multithreaded away from rendering and game logic to prevent long step calculation
+- pause/resume and advance by steps
+- display solver stats and averages
 - algorithmic
   - BFS
   - DFS (planned)
