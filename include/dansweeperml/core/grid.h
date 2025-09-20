@@ -8,7 +8,10 @@
 #include <vector>
 #include <string>
 #include <mutex>
+#include <shared_mutex>
 #include <dansweeperml/core/tile.h>
+
+inline std::shared_mutex gGridMtx;
 
 namespace Grid {
 

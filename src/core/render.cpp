@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <deque>
+#include <shared_mutex>
 
 namespace Render {
 
@@ -52,6 +53,8 @@ namespace Render {
     }
 
     void Render::renderThread(bool drawTrail) {
+
+        std::shared_lock rlk(gGridMtx);
 
         drawHighlight = drawTrail;
 

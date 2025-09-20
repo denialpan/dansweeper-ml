@@ -147,6 +147,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
         ISolver* solver = solvers[current].get();
 
         auto resetRun = [&] {
+
             const auto meta = grid->getMetadata();
 
             stats.time = meta.time;
@@ -155,6 +156,8 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
 
             // request generate grid
+            std::unique_lock wlk(gGridMtx);
+            
             gResetReq.store(true, std::memory_order_release);
             while (!gResetDone.load(std::memory_order_acquire) && !st.stop_requested()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -206,7 +209,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
             }
 
-            std::this_thread::sleep_for(1ms);
+            std::this_thread::sleep_for(10ms);
 
         }
 
@@ -222,7 +225,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(9, 9, 10);
+    Grid::Grid* currentGrid = new Grid::Grid(50, 50, 0.15f);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
