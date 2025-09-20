@@ -3,12 +3,11 @@
 //
 
 #include "../../../include/dansweeperml/solver/algorithm/linearscan.h"
-#include <iostream>
-#include <format>
+
 
 #include "dansweeperml/core/grid.h"
 #include "dansweeperml/core/render.h"
-
+#include <dansweeperml/solver/isolver.h>
 
 // THIS IS A TEST THAT IT MULTHREAD WITH HIGHLIGHTING WORKS
 namespace algorithmlinearscan {
@@ -24,10 +23,11 @@ namespace algorithmlinearscan {
             reset();
         }
 
+        Render::queueHighlightTile(x, y);
         grid.reveal(x, y);
 
-        Render::queueHighlightTile(x, y);
         steps++;
+
         return true;
     }
 
@@ -40,6 +40,10 @@ namespace algorithmlinearscan {
         x = 0;
         y = 0;
         steps = 0;
+    }
+
+    std::string LinearScan::getName() {
+        return name;
     }
 
 

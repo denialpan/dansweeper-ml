@@ -16,6 +16,10 @@ namespace algorithmbfsoptimized {
         bool step(Grid::Grid& grid) override;
         int getSteps() override;
         void reset() override;
+        std::string getName() override;
+
+    protected:
+        std::string name = "bfs optimized";
 
     private:
         std::set<std::pair<int, int>> visited;

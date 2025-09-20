@@ -185,6 +185,11 @@ namespace algorithmbfsoptimized {
         started = false;
     }
 
+    std::string BFSUnoptimized::getName() {
+        return name;
+    }
+
+
 
 
 } // algorithmbfsunoptimized

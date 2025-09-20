@@ -11,13 +11,8 @@
 #include <dansweeperml/solver/algorithm/bfsoptimized.h>
 #include <dansweeperml/solver/algorithm/linearscan.h>
 
-enum RunType {
-    RUN_ALGORITHM,
-    RUN_AGENT,
-    LEARN_AGENT,
-};
-
 struct SolverStats {
+    std::string name;
     int steps = 0;
     int totalSteps = 0;
     float time = 0.0f;
@@ -30,7 +25,6 @@ struct SolverStats {
     float averageTime = 0.0f;
 };
 
-static RunType runtype = RUN_ALGORITHM;
 static int iterateRuntype;
 
 std::vector<std::unique_ptr<ISolver>> solvers;
@@ -39,6 +33,8 @@ static int algorithmSelectionIndex = 1;
 std::atomic<bool> stepRequested = false;
 std::atomic<bool> gResetReq{false};
 std::atomic<bool> gResetDone{false};
+std::mutex gResetMtx;
+std::condition_variable gResetCv;
 
 static SolverStats stats;
 
@@ -53,6 +49,7 @@ void solverstats(const Font &font) {
     listOfText.push_back(std::format("steps: {}", stats.steps));
     listOfText.push_back(std::format("lose: {}", stats.lose));
     listOfText.push_back(std::format("win: {}", stats.win));
+    listOfText.push_back(std::format("name: {}", stats.name));
 
     for (int i = 0; i < listOfText.size(); i++) {
         DrawTextEx(font, listOfText[i].c_str(), {10, GetScreenHeight() / 2 - (15.0f * i + 20)}, 13, 1, WHITE);
@@ -81,8 +78,6 @@ void debug(const Font &font, Grid::Grid* grid) {
     std::vector<std::vector<Grid::Cell>> cells = grid->getCells();
     auto [cx, cy] = Controller::getCoordinates();
 
-    std::string runtypeString = "";
-
     listOfText.push_back(std::format("created by daniel pan"));
     listOfText.push_back(std::format("fps: {}", GetFPS()));
     listOfText.push_back(std::format("dims: {}x{}", metadata.width, metadata.height));
@@ -90,23 +85,6 @@ void debug(const Font &font, Grid::Grid* grid) {
     listOfText.push_back(std::format("prng: {}", metadata.prng));
     listOfText.push_back(std::format("safe: {}, {}", metadata.safeX, metadata.safeY));
     listOfText.push_back(std::format("time: {}", metadata.time));
-
-    switch (runtype) {
-        case RUN_ALGORITHM:
-            runtypeString = "algorithm";
-            break;
-        case RUN_AGENT:
-            runtypeString = "agent";
-            break;
-        case LEARN_AGENT:
-            runtypeString = "learn agent";
-            break;
-        default:
-            std::cout << "how you get here" << std::endl;
-            break;
-    }
-
-    listOfText.push_back(std::format("run type: {}", runtypeString));
 
     if (cx >= 0 && cy >= 0 && cx < metadata.width && cy < metadata.height) {
         listOfText.push_back(std::format("coords: {}, {}", cx, cy));
@@ -156,18 +134,20 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
 
             // request generate grid
-            std::unique_lock wlk(gGridMtx);
-            
             gResetReq.store(true, std::memory_order_release);
-            while (!gResetDone.load(std::memory_order_acquire) && !st.stop_requested()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            {
+                std::unique_lock lk(gResetMtx);
+                gResetCv.wait(lk, [&] {
+                    return gResetDone.load(std::memory_order_acquire) || st.stop_requested();
+                });
             }
             gResetDone.store(false, std::memory_order_release);
 
+            Render::resetHighlightTiles();
             solver = solvers[current].get();
             solver->reset();
-            Render::resetHighlightTiles();
 
+            stats.name = solver->getName();
             stats.steps = 0;
             stats.boardsRun++;
 
@@ -181,8 +161,10 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             if (now != current) {
                 current = now;
                 solver = solvers[current].get();
-                solver->reset();
+                std::cout << "changed" << std::endl;
+                resetRun();
                 resetSolverStats(stats);
+                solver->reset();
             }
 
             if (autoRunSolver || stepRequested.exchange(false)) {
@@ -209,7 +191,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
             }
 
-            std::this_thread::sleep_for(10ms);
+            std::this_thread::sleep_for(1ms);
 
         }
 
@@ -225,7 +207,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(240);
-    Grid::Grid* currentGrid = new Grid::Grid(50, 50, 0.15f);
+    Grid::Grid* currentGrid = new Grid::Grid(9, 9, 10);
 
     InitWindow(screenWidth, screenHeight, "dansweeperml");
 
@@ -252,38 +234,20 @@ int main() {
 
         // regenerate grid request
         if (gResetReq.exchange(false, std::memory_order_acq_rel)) {
-            const auto meta = currentGrid->getMetadata();
-            currentGrid->generateGrid(meta.width / 2, meta.height / 2);
-            gResetDone.store(true, std::memory_order_release);
-        }
-
-        switch (runtype) {
-            case RUN_ALGORITHM:
-                break;
-            case RUN_AGENT:
-
-                break;
-            case LEARN_AGENT:
-
-                break;
-            default:
-                std::cout << "how you get here" << std::endl;
-                break;
+            {
+                std::unique_lock wlk(gGridMtx);
+                currentGrid->generateGrid(currentGrid->getMetadata().width / 2, currentGrid->getMetadata().height / 2);
+            }
+            {
+                std::lock_guard lk(gResetMtx);
+                gResetDone.store(true, std::memory_order_release);
+            }
+            gResetCv.notify_all();
         }
 
         // debug new board
         if (IsKeyDown(KEY_SPACE)) {
             currentGrid->generateGrid(currentGrid->getMetadata().width / 2, currentGrid->getMetadata().height / 2);
-        }
-
-        if (IsKeyPressed(KEY_A)) {
-            iterateRuntype--;
-            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype + 3)) % 3);
-        }
-
-        if (IsKeyPressed(KEY_D)) {
-            iterateRuntype++;
-            runtype = static_cast<RunType>((static_cast<RunType>(iterateRuntype + 3)) % 3);
         }
 
         if (IsKeyPressed(KEY_W)) {

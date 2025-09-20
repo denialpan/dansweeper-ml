@@ -140,8 +140,9 @@ namespace Grid {
 
             }
 
+            getWinCondition();
+
         }
-        getWinCondition();
 
     }
 

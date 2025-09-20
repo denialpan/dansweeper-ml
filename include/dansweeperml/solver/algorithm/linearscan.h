@@ -11,10 +11,15 @@
 namespace algorithmlinearscan {
     class LinearScan : public ISolver {
 
+    public:
+
         bool step(Grid::Grid& grid) override;
         int getSteps() override;
         void reset() override;
+        std::string getName() override;
 
+    protected:
+        std::string name = "linear scan";
     };
 } // algorithmlinearscan
 
