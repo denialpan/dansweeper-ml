@@ -59,7 +59,7 @@ namespace Render {
 
         camera->offset = {GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f};
 
-        const auto& cellsRef = grid->getCells();
+        const auto cellsRef = grid->getCells();
 
 
         BeginMode2D(*camera);
@@ -128,17 +128,10 @@ namespace Render {
 
         }
 
-
-
-
         EndMode2D();
     }
 
     void queueHighlightTile(int x, int y) {
-
-        if (!drawHighlight) {
-            return;
-        }
 
         if (x < 0 || x >= gridMetadata.width || y < 0 || y >= gridMetadata.height) {
             return;
