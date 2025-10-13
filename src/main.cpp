@@ -10,6 +10,8 @@
 #include <dansweeperml/solver/isolver.h>
 #include <dansweeperml/solver/algorithm/bfsoptimized.h>
 #include <dansweeperml/solver/algorithm/linearscan.h>
+#include <dansweeperml/solver/ml/linearregression/linearregressiontrainer.h>
+#include <dansweeperml/solver/ml/linearregression/linearregsolver.h>
 
 struct SolverStats {
     std::string name;
@@ -28,7 +30,7 @@ struct SolverStats {
 static int iterateRuntype;
 
 std::vector<std::unique_ptr<ISolver>> solvers;
-static int algorithmSelectionIndex = 1;
+static int algorithmSelectionIndex = 2;
 
 std::atomic<bool> stepRequested = false;
 std::atomic<bool> gResetReq{false};
@@ -120,6 +122,8 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
         // register algorithmic solvers
         solvers.push_back(std::make_unique<algorithmlinearscan::LinearScan>());
         solvers.push_back(std::make_unique<algorithmbfsoptimized::BFSUnoptimized>());
+        solvers.push_back(std::make_unique<mlsolver::LinearRegTrainerSolver>("models/linreg.bin", 5000));
+        solvers.push_back(std::make_unique<mlsolver::LinearRegSolver>("models/linreg.bin"));
 
         size_t current = solvers.empty() ? 0 : (selectionIndex % solvers.size());
         ISolver* solver = solvers[current].get();
@@ -137,10 +141,15 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
             gResetReq.store(true, std::memory_order_release);
             {
                 std::unique_lock lk(gResetMtx);
-                gResetCv.wait(lk, [&] {
+                gResetCv.wait_for(lk, std::chrono::milliseconds(100), [&] {
                     return gResetDone.load(std::memory_order_acquire) || st.stop_requested();
                 });
             }
+
+            if (st.stop_requested()) {
+                return;
+            }
+
             gResetDone.store(false, std::memory_order_release);
 
             Render::resetHighlightTiles();
@@ -284,7 +293,11 @@ int main() {
 
     }
 
+
     walker.request_stop();
+    if (walker.joinable()) {
+        walker.join();
+    }
     Render::unloadTexture();
     CloseWindow();
     return 0;
