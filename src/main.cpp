@@ -10,8 +10,6 @@
 #include <dansweeperml/solver/isolver.h>
 #include <dansweeperml/solver/algorithm/bfsoptimized.h>
 #include <dansweeperml/solver/algorithm/linearscan.h>
-#include <dansweeperml/solver/ml/linearregression/linearregressiontrainer.h>
-#include <dansweeperml/solver/ml/linearregression/linearregsolver.h>
 
 struct SolverStats {
     std::string name;
@@ -122,8 +120,6 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
         // register algorithmic solvers
         solvers.push_back(std::make_unique<algorithmlinearscan::LinearScan>());
         solvers.push_back(std::make_unique<algorithmbfsoptimized::BFSUnoptimized>());
-        solvers.push_back(std::make_unique<mlsolver::LinearRegTrainerSolver>("models/linreg.bin", 5000));
-        solvers.push_back(std::make_unique<mlsolver::LinearRegSolver>("models/linreg.bin"));
 
         size_t current = solvers.empty() ? 0 : (selectionIndex % solvers.size());
         ISolver* solver = solvers[current].get();
