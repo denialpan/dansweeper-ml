@@ -11,6 +11,8 @@
 #include <dansweeperml/solver/algorithm/bfsoptimized.h>
 #include <dansweeperml/solver/algorithm/linearscan.h>
 
+#include <dansweeperml/solver/ml/linearregression/linearregressiontrainer.h>
+
 struct SolverStats {
     std::string name;
     int steps = 0;
@@ -120,6 +122,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
         // register algorithmic solvers
         solvers.push_back(std::make_unique<algorithmlinearscan::LinearScan>());
         solvers.push_back(std::make_unique<algorithmbfsoptimized::BFSUnoptimized>());
+        solvers.push_back(std::make_unique<mllinearregressiontrainer::LinearRegressionTrainer>(5000, "models/lr.bin"));
 
         size_t current = solvers.empty() ? 0 : (selectionIndex % solvers.size());
         ISolver* solver = solvers[current].get();
@@ -196,7 +199,7 @@ std::jthread solverThread(Grid::Grid* grid, int& selectionIndex, bool& autoRunSo
 
             }
 
-            std::this_thread::sleep_for(1ms);
+            std::this_thread::sleep_for(100ms);
 
         }
 

@@ -13,7 +13,7 @@ namespace mllinearregressiontrainer {
     class LinearRegressionTrainer : public ISolver {
 
     public:
-        explicit LinearRegressionTrainer(int trainEverySamples = 5000);
+        explicit LinearRegressionTrainer(int trainEverySamples = 5000, std::string filePath = "models/defaultlr.bin");
 
         bool step(Grid::Grid& grid) override;
         std::string getName() override;
@@ -25,16 +25,17 @@ namespace mllinearregressiontrainer {
 
     private:
         void appendSample(const std::vector<double>& feature, double label);
-        void train();
+        void trainAndSave();
         void saveModel();
 
         std::string modelPath_;
         int trainEverySamples_;
-        bool hasModel_;
 
         arma::mat features_;
         arma::rowvec labels_;
         mlpack::LinearRegression<> lr_;
+
+        std::mt19937 rng_{std::random_device{}()};
     };
 } // mllinearregressiontrainer
 

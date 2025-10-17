@@ -24,7 +24,7 @@ add_executable(dansweeper_ml
 
     src/solver/algorithm/linearscan.cpp
     src/solver/algorithm/bfsoptimized.cpp
-        include/dansweeperml/solver/ml/linearregression/LinearRegressionTrainer.cpp
+        src/solver/ml/linearregression/linearregressiontrainer.cpp
         include/dansweeperml/solver/ml/linearregression/LinearRegressionTrainer.h
 )
 
